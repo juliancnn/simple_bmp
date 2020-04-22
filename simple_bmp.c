@@ -89,17 +89,16 @@ enum sbmp_codes sbmp_load_bmp (const char *filename, sbmp_image *image)
 
   fread (&image->type, sizeof (image->type), 1, fd);
   fread (&image->info, sizeof (image->info), 1, fd);
-  image->data = calloc (image->info.image_height, sizeof (sbmp_raw_data *));
-  if (image - data == NULL)
+  image->data = calloc ((size_t) image->info.image_height, sizeof (sbmp_raw_data *));
+  if (image->data == NULL)
     {
       fprintf (stderr, "Error: %s\n", strerror (errno));
       return SBMP_ERROR_FILE;
     }
 
-
   for (int32_t i = image->info.image_height - 1; i >= 0; i--)
     {
-      image->data[i] = calloc (image->info.image_width, sizeof (sbmp_raw_data));
+      image->data[i] = calloc ((size_t) image->info.image_width, sizeof (sbmp_raw_data));
       fread (image->data[i],
              sizeof (sbmp_raw_data),
              (uint32_t) image->info.image_width, fd);
