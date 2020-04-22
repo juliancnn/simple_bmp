@@ -15,9 +15,9 @@ enum sbmp_codes sbmp_initialize_bmp (sbmp_image *image, uint32_t height, uint32_
 
   // Headerd
   image->type.file_type = TIFF_MAGIC_NUMBER;
-  image->type.data_offset = sizeof(sbmp_ftype_data) + BITMAPINFOHEADER; // arreglar sizeof + size of
+  image->type.data_offset = sizeof (sbmp_ftype_data) + BITMAPINFOHEADER; // arreglar sizeof + size of
   image->type.file_size = (uint32_t) image->type.data_offset;
-  image->type.file_size += (((uint32_t) sizeof (sbmp_raw_data)) * width + width % 4 ) * height;
+  image->type.file_size += (((uint32_t) sizeof (sbmp_raw_data)) * width + width % 4) * height;
   image->type.reserved = 0;
 
   image->info.header_size = BITMAPINFOHEADER;
@@ -66,28 +66,19 @@ enum sbmp_codes sbmp_save_bmp (const char *filename, const sbmp_image *image)
   fwrite (&image->type, sizeof (image->type), 1, fd);
   fwrite (&image->info, sizeof (image->info), 1, fd);
 
-  for (int32_t i =  image->info.image_height - 1; i >= 0; i--)
+  for (int32_t i = image->info.image_height - 1; i >= 0; i--)
     {
       fwrite (image->data[i],
-          sizeof (sbmp_raw_data),
-          (uint32_t) (image->info.image_width + image->info.image_width % 4),
-           fd);
+              sizeof (sbmp_raw_data),
+              (uint32_t) (image->info.image_width + image->info.image_width % 4),
+              fd);
     }
 
   return SBMP_OK;
 }
 
-
-
 enum sbmp_codes sbmp_load_bmp (const char *filename, sbmp_image *image)
 {
-
-  image->data = calloc(image->info.image_height, sizeof(sbmp_raw_data *))
-  if (image-data == NULL)
-    {  
-      fprintf (stderr, "Error: %s\n", strerror (errno));
-      return SBMP_ERROR_FILE;
-    }
 
   FILE *fd = fopen (filename, "r");
   if (fd == NULL)
@@ -96,16 +87,22 @@ enum sbmp_codes sbmp_load_bmp (const char *filename, sbmp_image *image)
       return SBMP_ERROR_FILE;
     }
 
-  // Write the headers
   fread (&image->type, sizeof (image->type), 1, fd);
   fread (&image->info, sizeof (image->info), 1, fd);
-
-  for (int32_t i =  image->info.image_height - 1; i >= 0; i--)
+  image->data = calloc (image->info.image_height, sizeof (sbmp_raw_data *));
+  if (image - data == NULL)
     {
-      image->data[i] = calloc (image->info.image_width, sizeof(sbmp_raw_data));
+      fprintf (stderr, "Error: %s\n", strerror (errno));
+      return SBMP_ERROR_FILE;
+    }
+
+
+  for (int32_t i = image->info.image_height - 1; i >= 0; i--)
+    {
+      image->data[i] = calloc (image->info.image_width, sizeof (sbmp_raw_data));
       fread (image->data[i],
-          sizeof (sbmp_raw_data),
-          (uint32_t)image->info.image_width, fd);
+             sizeof (sbmp_raw_data),
+             (uint32_t) image->info.image_width, fd);
     }
 
   return SBMP_OK;
