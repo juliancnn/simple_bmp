@@ -79,4 +79,29 @@ enum sbmp_codes sbmp_save_bmp (const char *filename, const sbmp_image *image)
 
 
 
+enum sbmp_codes sbmp_load_bmp (const char *filename, const sbmp_image *image)
+{
+
+  FILE *fd = fopen (filename, "r");
+  if (fd == NULL)
+    {
+      fprintf (stderr, "Error: %s\n", strerror (errno));
+      return SBMP_ERROR_FILE;
+    }
+
+  // Write the headers
+  fread (&image->type, sizeof (image->type), 1, fd);
+  fread (&image->info, sizeof (image->info), 1, fd);
+
+  for (int32_t i =  image->info.image_height - 1; i >= 0; i--)
+    {
+      fread (image->data[i],
+          sizeof (sbmp_raw_data),
+          (uint32_t) (image->info.image_width + image->info.image_width % 4),
+           fd);
+    }
+
+  return SBMP_OK;
+}
+
 
