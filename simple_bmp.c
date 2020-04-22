@@ -1,10 +1,10 @@
 /**
- Created by jmorales on 22/17/20.
+ Created by jmorales on 4/22/20.
 */
 
 #include "simple_bmp.h"
 
-enum sbmp_codes sbmp_create_bmp (sbmp_image *image, uint32_t height, uint32_t width)
+enum sbmp_codes sbmp_initialize_bmp (sbmp_image *image, uint32_t height, uint32_t width)
 {
 
   // Falta chequeo > 32bits, of
@@ -15,9 +15,10 @@ enum sbmp_codes sbmp_create_bmp (sbmp_image *image, uint32_t height, uint32_t wi
 
   // Headerd
   image->type.file_type = TIFF_MAGIC_NUMBER;
-  image->type.file_size = (((uint32_t) sizeof (sbmp_raw_data)) * width + width % 4 + height);
+  image->type.data_offset = sizeof(sbmp_ftype_data) + BITMAPINFOHEADER; // arreglar sizeof + size of
+  image->type.file_size = (uint32_t) image->type.data_offset;
+  image->type.file_size += (((uint32_t) sizeof (sbmp_raw_data)) * width + width % 4 ) * height;
   image->type.reserved = 0;
-  image->type.data_offset = 14 + BITMAPINFOHEADER;
 
   image->info.header_size = BITMAPINFOHEADER;
   image->info.image_width = (int32_t) width;

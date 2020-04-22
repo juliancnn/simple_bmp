@@ -75,9 +75,9 @@ typedef struct _sbmp_iinfo_data {
 
 /// Pixel 24-bits description
 typedef struct _sbmp_raw_data {
-  uint8_t red;
-  uint8_t green;
   uint8_t blue;
+  uint8_t green;
+  uint8_t red;
 } __attribute__ ((__packed__)) sbmp_raw_data;
 
 typedef struct _sbmp_image {
@@ -89,7 +89,7 @@ typedef struct _sbmp_image {
 // Funciones
 
 
-enum sbmp_codes sbmp_create_bmp (sbmp_image *image, uint32_t height, uint32_t width);
+enum sbmp_codes sbmp_initialize_bmp (sbmp_image *image, uint32_t height, uint32_t width);
 enum sbmp_codes sbmp_save_bmp (const char *filename, const sbmp_image *image);
 
 #endif //_SIMPLE_BMP_H_
