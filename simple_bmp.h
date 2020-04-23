@@ -91,6 +91,6 @@ typedef struct _sbmp_image {
 
 enum sbmp_codes sbmp_initialize_bmp (sbmp_image *image, uint32_t height, uint32_t width);
 enum sbmp_codes sbmp_save_bmp (const char *filename, const sbmp_image *image);
-enum sbmp_codes sbmp_load_bmp (const char *filename, const sbmp_image *image);
+enum sbmp_codes sbmp_load_bmp (const char *filename, sbmp_image *image);
 
 #endif //_SIMPLE_BMP_H_

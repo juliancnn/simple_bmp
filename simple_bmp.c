@@ -79,7 +79,7 @@ enum sbmp_codes sbmp_save_bmp (const char *filename, const sbmp_image *image)
 
 
 
-enum sbmp_codes sbmp_load_bmp (const char *filename, const sbmp_image *image)
+enum sbmp_codes sbmp_load_bmp (const char *filename, sbmp_image *image)
 {
 
   FILE *fd = fopen (filename, "r");
