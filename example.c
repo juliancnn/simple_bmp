@@ -25,7 +25,7 @@ int main ()
   sbmp_load_bmp ("base.bmp", &dup);
   printf ("altura : %d\n", test_img.info.image_height);
   printf ("ancho : %d\n", test_img.info.image_width);
-  conv2d_monocore (test_img.data, dup.data, test_img.info.image_width, test_img.info.image_width, kernel);
+  conv2d_monocore (test_img.data, dup.data, test_img.info.image_height, test_img.info.image_width, kernel);
   sbmp_save_bmp ("frac.bmp", &dup);
 }
 
@@ -124,10 +124,10 @@ conv2d_monocore (sbmp_raw_data **base_img, sbmp_raw_data **new_img, int32_t heig
   gettimeofday (&tiempo_2, NULL);
 
   /* Avanzo sobre las filas de la imagen, tipo not process  */
-  for (int pos_ix = (k_size >> 1); pos_ix  + 1< height - (k_size >> 1); pos_ix++)
+  for (int pos_ix = k_mid; pos_ix < (height - k_mid); pos_ix++)
     {
       /* Avanzo sobre las columnas de la imagen, tipo not process  */
-      for (int pos_iy = (k_size >> 1); pos_iy + 1 < width - (k_size >> 1); pos_iy++)
+      for (int pos_iy = k_mid; pos_iy  < (width - k_mid); pos_iy++)
         {
           pixelOverRed = 0;
           pixelOverGreen = 0;
