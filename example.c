@@ -3,32 +3,39 @@
 #include <inttypes.h>
 #include "simple_bmp.h"
 
-/* definition of constants */
-#define Radius 0.8
-#define Cx 0
-#define Cy 0
-#define Side 0.15
-#define M 2047
-#define Num 64
 
-int main ()
+void fractal_generate (sbmp_raw_data **, int32_t, int32_t);
+
+int main(){
+  sbmp_image test_img;
+  sbmp_load_bmp ("base.bmp", &test_img);
+  printf("altura : %d\n", test_img.info.image_height);
+  printf("ancho : %d\n", test_img.info.image_width);
+  fractal_generate (test_img.data, test_img.info.image_height, test_img.info.image_width);
+  sbmp_save_bmp ("frac.bmp", &test_img);
+}
+
+void fractal_generate (sbmp_raw_data **img_data, int32_t height, int32_t width)
 {
-  sbmp_image *img = calloc (1, sizeof (sbmp_image));
-  //sbmp_initialize_bmp (img, M+1, (M+1)*2);
-  sbmp_load_bmp ("base.bmp",img );
+  const double Radius = 0.8;
+  const double Cx = 0.0;
+  const double Cy = 0.0;
+  const double Side = 0.15;
+  const uint16_t Num = 64;
 
   int p, q, n, w;
   double x, y, xx, yy, Incx, Incy;
 
-  for (p = 1; p <= M; p++)
+  for (p = 0; p < height; p++)
     {
-      Incy = -Side + 2 * Side / M * p;
+      Incy = -Side + 2 * Side / height * p;
 
       //printf("%i %%\n", p*100/M);
 
-      for (q = 1; q <= M*2; q++)
+      for (q = 0; q < width; q++)
         {
-          Incx = -Side + 2 * Side / (M *2) * q;
+          //Incx = -Side + 2 * Side / (width *2) * q;
+          Incx = -Side + 2 * Side / width * q;
 
           x = Incx;
           y = Incy;
@@ -56,13 +63,11 @@ int main ()
                 }
 
             }
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wconversion"
-          img->data[p][q] = (sbmp_raw_data) {(uint8_t)(w*1.5), 0, (uint8_t) (w - 1)};
+          img_data[p][q] = (sbmp_raw_data) {(uint8_t)(w*1.5), 0, (uint8_t) (w - 1)};
 #pragma GCC diagnostic pop
         }
     }
-  sbmp_save_bmp("test.bmp",img);
-
-  return 0;
 }
