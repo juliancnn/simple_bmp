@@ -91,11 +91,11 @@ void conv2d_monocore (sbmp_raw_data **base_img, sbmp_raw_data **new_img,
       {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
       {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
       {0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0},
-      {0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0},
-      {0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0},
-      {0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0},
-      {0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0},
-      {0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0},
+      {0, 0, 1, 2, 2, 2, 2, 2, 1, 0, 0},
+      {0, 0, 1, 2, 3, 3, 3, 2, 1, 0, 0},
+      {0, 0, 1, 2, 3, 4, 3, 2, 1, 0, 0},
+      {0, 0, 1, 2, 3, 3, 3, 2, 1, 0, 0},
+      {0, 0, 2, 2, 2, 2, 2, 2, 1, 0, 0},
       {0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0},
       {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
       {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
@@ -134,14 +134,17 @@ void conv2d_monocore (sbmp_raw_data **base_img, sbmp_raw_data **new_img,
               for (int pos_ky = 0; pos_ky < k_size; pos_ky++)
                 {
                   pixelOverRed += (uint16_t) ((base_img[pos_ix-k_mid + pos_kx][pos_iy- k_mid + pos_ky].red
-                                  * kernel[pos_kx][pos_ky])/49);
+                                  * kernel[pos_kx][pos_ky]));
                   pixelOverBlue += (uint16_t) ((base_img[pos_ix-k_mid + pos_kx][pos_iy- k_mid + pos_ky].blue
-                                  * kernel[pos_kx][pos_ky])/49);
+                                  * kernel[pos_kx][pos_ky]));
                   pixelOverGreen += (uint16_t) ((base_img[pos_ix-k_mid + pos_kx][pos_iy- k_mid + pos_ky].green
-                                  * kernel[pos_kx][pos_ky])/49);
+                                  * kernel[pos_kx][pos_ky]));
                 }
 
             }
+          pixelOverRed /= 76;
+          pixelOverGreen /= 76;
+          pixelOverBlue /= 76;
           new_img[pos_ix][pos_iy].red = (uint8_t) ((pixelOverRed) > 255) ? 255 : ((uint8_t) pixelOverRed);
           new_img[pos_ix][pos_iy].blue = (uint8_t) ((pixelOverBlue) > 255) ? 255 : ((uint8_t) pixelOverBlue);
           new_img[pos_ix][pos_iy].green = (uint8_t) ((pixelOverGreen) > 255) ? 255 : ((uint8_t) pixelOverGreen);
