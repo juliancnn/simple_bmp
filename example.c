@@ -7,18 +7,19 @@
 
 uint64_t rdtsc ();
 void focus_center (sbmp_raw_data **, int32_t, int32_t);
-float *conv2d_monocore (float *img, int i_size_x, int i_size_y);
+void conv2d_monocore (sbmp_raw_data **base_img, sbmp_raw_data **new_img,
+                        int32_t height, int32_t width);
 
 int main ()
 {
   sbmp_image test_img, dup;
-  sbmp_load_bmp ("guarani.bmp", &test_img);
-  sbmp_initialize_bmp (&dup, (uint32_t) test_img.info.image_height, (uint32_t) test_img.info.image_width);
-
+  sbmp_load_bmp ("base.bmp", &test_img);
+  //sbmp_initialize_bmp (&dup, (uint32_t) test_img.info.image_height, (uint32_t) test_img.info.image_width);
+  sbmp_load_bmp ("base.bmp", &dup);
   printf ("altura : %d\n", test_img.info.image_height);
   printf ("ancho : %d\n", test_img.info.image_width);
-  focus_center (test_img.data, test_img.info.image_height, test_img.info.image_width);
-  sbmp_save_bmp ("frac.bmp", &test_img);
+  conv2d_monocore (test_img.data, dup.data, test_img.info.image_height, test_img.info.image_width);
+  sbmp_save_bmp ("frac.bmp", &dup);
 }
 
 /*
@@ -75,11 +76,32 @@ uint64_t rdtsc ()
  *
  * @note alloca memoria para el resultado igual que la imagen de entrada
  */
-float *conv2d_monocore (float *img)
+void conv2d_monocore (sbmp_raw_data **base_img, sbmp_raw_data **new_img,
+                        int32_t height, int32_t width)
 {
-  uint16_t kernel[] = { 1, 1, 1, 1, 1, 1, 2, 2, 2, 1, 1, 2, 4, 2, 1, 1, 2, 2, 2, 1, 1, 1, 1, 1, 1 }; //5x5
-  uint16_t k_size = 5;
-  float baias = 36;
+ /* uint8_t kernel[5][5] = {
+                         {2, 1, 1, 0, 0},
+                         {1, 1, 2, 1, 0},
+                         {0, 0, 1, 1, 1},
+                         {0, 0, 0, 1, 2},
+                         {0, 0, 0, 0, 1}
+                        }; //5x5
+                        */
+  uint8_t kernel[11][11] = {
+      {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+      {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+      {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+      {0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0},
+      {0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0},
+      {0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0},
+      {0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0},
+      {0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0},
+      {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+      {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+      {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+  }; //5x5
+  int8_t k_size = 11;
+  int8_t k_mid = 5;
 
   /* Timmer */
   uint64_t t1, t2, t3;
@@ -87,10 +109,9 @@ float *conv2d_monocore (float *img)
   int32_t time_ms;
 
 
-  float *ptr_img_x = img + (k_size >> 1) * i_size_x;
-  float *ptr_img_o = data_out + (k_size >> 1) * i_size_x;
-  float *ptr_ker_x;
-  float *pixelOver;
+  uint32_t  pixelOverRed;
+  uint32_t  pixelOverBlue;
+  uint32_t pixelOverGreen;
 
 #ifdef DEBUG_MODE
   printf ("Porcentaje : 00");
@@ -100,33 +121,31 @@ float *conv2d_monocore (float *img)
   gettimeofday (&tiempo_1, NULL);
   gettimeofday (&tiempo_2, NULL);
   /* Avanzo sobre las filas de la imagen, tipo not process  */
-  for (int pos_ix = (k_size >> 1); pos_ix < i_size_x - (k_size >> 1); pos_ix++)
+  for (int pos_ix = (k_size >> 1); pos_ix < width - (k_size >> 1); pos_ix++)
     {
       /* Avanzo sobre las columnas de la imagen, tipo not process  */
-      for (int pos_iy = (k_size >> 1); pos_iy < i_size_y - (k_size >> 1); pos_iy++)
+      for (int pos_iy = (k_size >> 1); pos_iy < height - (k_size >> 1); pos_iy++)
         {
-          /* Calculo sobre el kernel */
-          ptr_ker_x = kernel;
+          pixelOverRed = 0;
+          pixelOverGreen = 0;
+          pixelOverBlue = 0;
           for (int pos_kx = 0; pos_kx < k_size; pos_kx++)
             {
               for (int pos_ky = 0; pos_ky < k_size; pos_ky++)
                 {
-                  pixelOver = (ptr_img_x + (-(k_size >> 1) + pos_kx) * i_size_x) + (pos_iy - (k_size >> 1) + pos_ky);
-
-                  /* *(ptr_img_o + pos_iy) += *pixelOver < 250 ? 0 :
-                                           (*pixelOver > 1000 ? 1000 : (*pixelOver
-                                                                        * *(kernel + pos_kx * k_size + pos_ky))); */
-                  *(ptr_img_o + pos_iy) += *pixelOver * *(kernel + pos_kx * k_size + pos_ky);
-
+                  pixelOverRed += (uint16_t) ((base_img[pos_ix-k_mid + pos_kx][pos_iy- k_mid + pos_ky].red
+                                  * kernel[pos_kx][pos_ky])/32);
+                  pixelOverBlue += (uint16_t) ((base_img[pos_ix-k_mid + pos_kx][pos_iy- k_mid + pos_ky].blue
+                                  * kernel[pos_kx][pos_ky])/32);
+                  pixelOverGreen += (uint16_t) ((base_img[pos_ix-k_mid + pos_kx][pos_iy- k_mid + pos_ky].green
+                                  * kernel[pos_kx][pos_ky])/32);
                 }
 
-              ptr_ker_x += k_size;
-
             }
-
+          new_img[pos_ix][pos_iy].red = (uint8_t) ((pixelOverRed) > 255) ? 255 : ((uint8_t) pixelOverRed);
+          new_img[pos_ix][pos_iy].blue = (uint8_t) ((pixelOverBlue) > 255) ? 255 : ((uint8_t) pixelOverBlue);
+          new_img[pos_ix][pos_iy].green = (uint8_t) ((pixelOverGreen) > 255) ? 255 : ((uint8_t) pixelOverGreen);
         }
-      ptr_img_x += i_size_x;
-      ptr_img_o += i_size_x;
 
     }
 
@@ -141,5 +160,4 @@ float *conv2d_monocore (float *img)
 #endif
   printf ("[Monocore  v1] %15lu ciclos     %10i ms\n", (t3 - t2) - (t2 - t1), time_ms);
 
-  return data_out;
 }

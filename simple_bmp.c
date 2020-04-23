@@ -103,7 +103,7 @@ enum sbmp_codes sbmp_load_bmp (const char *filename, sbmp_image *image)
              sizeof (sbmp_raw_data),
              (uint32_t) image->info.image_width, fd);
     }
-
+  fclose (fd);
   return SBMP_OK;
 }
 
