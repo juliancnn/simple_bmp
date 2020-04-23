@@ -85,14 +85,6 @@ uint64_t rdtsc ()
 void
 conv2d_monocore (sbmp_raw_data **base_img, sbmp_raw_data **new_img, int32_t height, int32_t width, uint16_t **kernel)
 {
-  /* uint8_t kernel[5][5] = {
-                          {2, 1, 1, 0, 0},
-                          {1, 1, 2, 1, 0},
-                          {0, 0, 1, 1, 1},
-                          {0, 0, 0, 1, 2},
-                          {0, 0, 0, 0, 1}
-                         }; //5x5
-                         */
 
   int8_t k_size = SIZE_K;
   float bais = 0;
@@ -115,6 +107,10 @@ conv2d_monocore (sbmp_raw_data **base_img, sbmp_raw_data **new_img, int32_t heig
   uint32_t pixelOverBlue;
   uint32_t pixelOverGreen;
 
+  const int radio = width / 4;
+  const int centerx = abs (width / 2);
+  const int centery = abs (height / 2);
+
 #ifdef DEBUG_MODE
   printf ("Porcentaje : 00");
 #endif
@@ -132,25 +128,45 @@ conv2d_monocore (sbmp_raw_data **base_img, sbmp_raw_data **new_img, int32_t heig
           pixelOverRed = 0;
           pixelOverGreen = 0;
           pixelOverBlue = 0;
-          for (int pos_kx = 0; pos_kx < k_size; pos_kx++)
-            {
-              for (int pos_ky = 0; pos_ky < k_size; pos_ky++)
-                {
-                  pixelOverRed += (uint16_t) ((base_img[pos_ix - k_mid + pos_kx][pos_iy - k_mid + pos_ky].red
-                                               * kernel[pos_kx][pos_ky]));
-                  pixelOverBlue += (uint16_t) ((base_img[pos_ix - k_mid + pos_kx][pos_iy - k_mid + pos_ky].blue
-                                                * kernel[pos_kx][pos_ky]));
-                  pixelOverGreen += (uint16_t) ((base_img[pos_ix - k_mid + pos_kx][pos_iy - k_mid + pos_ky].green
-                                                 * kernel[pos_kx][pos_ky]));
-                }
 
-            }
-          pixelOverRed = (uint32_t) ((float) (pixelOverRed) / bais);
-          pixelOverGreen = (uint32_t) ((float) (pixelOverGreen) / bais);
-          pixelOverBlue = (uint32_t) ((float) (pixelOverBlue) / bais);
-          new_img[pos_ix][pos_iy].red = (uint8_t) ((pixelOverRed) > 255) ? 255 : ((uint8_t) pixelOverRed);
-          new_img[pos_ix][pos_iy].blue = (uint8_t) ((pixelOverBlue) > 255) ? 255 : ((uint8_t) pixelOverBlue);
-          new_img[pos_ix][pos_iy].green = (uint8_t) ((pixelOverGreen) > 255) ? 255 : ((uint8_t) pixelOverGreen);
+          int x =  pos_ix;
+          int y =  pos_iy;
+
+          if ((centerx - x) * (centerx - x) + (centery - y) * (centery - y) <= radio * radio)
+            {
+              //img->img_pixels[y][x] = BMP_PIXEL (255,0,255);
+
+              new_img[y][x].red = (uint8_t)
+                  (base_img[y][x].red * 1.5 > 255 ? 255 : (uint8_t) (base_img[y][x].red * 1.5));
+
+              new_img[y][x].green = (uint8_t)
+                  (base_img[y][x].green * 1.5 > 255 ? 255 : (uint8_t) (base_img[y][x].green * 1.5));
+              new_img[y][x].blue = (uint8_t)
+                  (base_img[y][x].blue * 1.5 > 255 ? 255 : (uint8_t) (base_img[y][x].blue * 1.5));
+
+            }else{
+              for (int pos_kx = 0; pos_kx < k_size; pos_kx++)
+                {
+                  for (int pos_ky = 0; pos_ky < k_size; pos_ky++)
+                    {
+                      pixelOverRed += (uint16_t) ((base_img[pos_ix - k_mid + pos_kx][pos_iy - k_mid + pos_ky].red
+                                                   * kernel[pos_kx][pos_ky]));
+                      pixelOverBlue += (uint16_t) ((base_img[pos_ix - k_mid + pos_kx][pos_iy - k_mid + pos_ky].blue
+                                                    * kernel[pos_kx][pos_ky]));
+                      pixelOverGreen += (uint16_t) ((base_img[pos_ix - k_mid + pos_kx][pos_iy - k_mid + pos_ky].green
+                                                     * kernel[pos_kx][pos_ky]));
+                    }
+
+                }
+              pixelOverRed = (uint32_t) ((float) (pixelOverRed) / bais);
+              pixelOverGreen = (uint32_t) ((float) (pixelOverGreen) / bais);
+              pixelOverBlue = (uint32_t) ((float) (pixelOverBlue) / bais);
+              new_img[pos_ix][pos_iy].red = (uint8_t) ((pixelOverRed) > 255) ? 255 : ((uint8_t) pixelOverRed);
+              new_img[pos_ix][pos_iy].blue = (uint8_t) ((pixelOverBlue) > 255) ? 255 : ((uint8_t) pixelOverBlue);
+              new_img[pos_ix][pos_iy].green = (uint8_t) ((pixelOverGreen) > 255) ? 255 : ((uint8_t) pixelOverGreen);
+          }
+
+
         }
 
     }
