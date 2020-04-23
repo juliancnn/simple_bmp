@@ -90,13 +90,13 @@ void conv2d_monocore (sbmp_raw_data **base_img, sbmp_raw_data **new_img,
   uint8_t kernel[11][11] = {
       {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
       {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-      {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-      {0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0},
-      {0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0},
-      {0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0},
-      {0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0},
-      {0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0},
-      {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+      {0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0},
+      {0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0},
+      {0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0},
+      {0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0},
+      {0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0},
+      {0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0},
+      {0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0},
       {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
       {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
   }; //5x5
@@ -134,11 +134,11 @@ void conv2d_monocore (sbmp_raw_data **base_img, sbmp_raw_data **new_img,
               for (int pos_ky = 0; pos_ky < k_size; pos_ky++)
                 {
                   pixelOverRed += (uint16_t) ((base_img[pos_ix-k_mid + pos_kx][pos_iy- k_mid + pos_ky].red
-                                  * kernel[pos_kx][pos_ky])/32);
+                                  * kernel[pos_kx][pos_ky])/49);
                   pixelOverBlue += (uint16_t) ((base_img[pos_ix-k_mid + pos_kx][pos_iy- k_mid + pos_ky].blue
-                                  * kernel[pos_kx][pos_ky])/32);
+                                  * kernel[pos_kx][pos_ky])/49);
                   pixelOverGreen += (uint16_t) ((base_img[pos_ix-k_mid + pos_kx][pos_iy- k_mid + pos_ky].green
-                                  * kernel[pos_kx][pos_ky])/32);
+                                  * kernel[pos_kx][pos_ky])/49);
                 }
 
             }
