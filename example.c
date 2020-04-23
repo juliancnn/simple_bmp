@@ -5,26 +5,27 @@
 
 #include "simple_bmp.h"
 
+#define  SIZE_K 43
+
 uint64_t rdtsc ();
 void focus_center (sbmp_raw_data **, int32_t, int32_t);
-void conv2d_monocore (sbmp_raw_data **base_img, sbmp_raw_data **new_img,
-                      int32_t height, int32_t width);
+void
+conv2d_monocore (sbmp_raw_data **base_img, sbmp_raw_data **new_img, int32_t height, int32_t width, uint16_t **kernel);
 void kernel_setup(uint16_t **kern, int16_t ksize);
 int main ()
 {
-  uint16_t **kernel = calloc(11, sizeof(int *));
-  for(int k = 0; k< 11; k++)
-    kernel[k] = calloc(11,sizeof(uint16_t));
-  kernel_setup (kernel, 11);
-  exit(0);
-  kernel_setup (kernel, 11);
+  uint16_t **kernel = calloc(SIZE_K, sizeof(int *));
+  for(int k = 0; k< SIZE_K; k++)
+    kernel[k] = calloc(SIZE_K,sizeof(uint16_t));
+  kernel_setup (kernel, SIZE_K);
+
   sbmp_image test_img, dup;
   sbmp_load_bmp ("base.bmp", &test_img);
   //sbmp_initialize_bmp (&dup, (uint32_t) test_img.info.image_height, (uint32_t) test_img.info.image_width);
   sbmp_load_bmp ("base.bmp", &dup);
   printf ("altura : %d\n", test_img.info.image_height);
   printf ("ancho : %d\n", test_img.info.image_width);
-  conv2d_monocore (test_img.data, dup.data, test_img.info.image_height, test_img.info.image_width);
+  conv2d_monocore (test_img.data, dup.data, test_img.info.image_height, test_img.info.image_width, kernel);
   sbmp_save_bmp ("frac.bmp", &dup);
 }
 
@@ -82,8 +83,8 @@ uint64_t rdtsc ()
  *
  * @note alloca memoria para el resultado igual que la imagen de entrada
  */
-void conv2d_monocore (sbmp_raw_data **base_img, sbmp_raw_data **new_img,
-                      int32_t height, int32_t width)
+void
+conv2d_monocore (sbmp_raw_data **base_img, sbmp_raw_data **new_img, int32_t height, int32_t width, uint16_t **kernel)
 {
   /* uint8_t kernel[5][5] = {
                           {2, 1, 1, 0, 0},
@@ -93,21 +94,17 @@ void conv2d_monocore (sbmp_raw_data **base_img, sbmp_raw_data **new_img,
                           {0, 0, 0, 0, 1}
                          }; //5x5
                          */
-  uint8_t kernel[11][11] = {
-      {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
-      {1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1},
-      {1, 2, 3, 3, 3, 3, 3, 3, 3, 2, 1},
-      {1, 2, 3, 4, 4, 4, 4, 4, 3, 2, 1},
-      {1, 2, 3, 4, 5, 5, 5, 4, 3, 2, 1},
-      {1, 2, 3, 4, 5, 6, 5, 4, 3, 2, 1},
-      {1, 2, 3, 4, 5, 5, 5, 4, 3, 2, 1},
-      {1, 2, 3, 4, 4, 4, 4, 4, 3, 2, 1},
-      {1, 2, 3, 3, 3, 3, 3, 3, 3, 2, 1},
-      {1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1},
-      {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}
-  }; //5x5
-  int8_t k_size = 11;
-  int8_t k_mid = 5;
+
+  int8_t k_size = SIZE_K;
+  float bais = 0;
+  for(int i=0;i<SIZE_K;i++){
+      for(int j=0;j<SIZE_K;j++){
+          bais += (float) (kernel[i][j]);
+        }
+  }
+
+
+  int8_t k_mid = k_size >> 1;
 
   /* Timmer */
   uint64_t t1, t2, t3;
@@ -148,9 +145,9 @@ void conv2d_monocore (sbmp_raw_data **base_img, sbmp_raw_data **new_img,
                     }
 
                 }
-              pixelOverRed /= 286;
-              pixelOverGreen /= 286;
-              pixelOverBlue /= 286;
+              pixelOverRed = (uint32_t) ((float) (pixelOverRed) / bais);
+              pixelOverGreen = (uint32_t) ((float) (pixelOverGreen) / bais);
+              pixelOverBlue = (uint32_t) ((float) (pixelOverBlue) / bais);
               new_img[pos_ix][pos_iy].red = (uint8_t) ((pixelOverRed) > 255) ? 255 : ((uint8_t) pixelOverRed);
               new_img[pos_ix][pos_iy].blue = (uint8_t) ((pixelOverBlue) > 255) ? 255 : ((uint8_t) pixelOverBlue);
               new_img[pos_ix][pos_iy].green = (uint8_t) ((pixelOverGreen) > 255) ? 255 : ((uint8_t) pixelOverGreen);
