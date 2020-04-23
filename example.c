@@ -107,7 +107,7 @@ conv2d_monocore (sbmp_raw_data **base_img, sbmp_raw_data **new_img, int32_t heig
   uint32_t pixelOverBlue;
   uint32_t pixelOverGreen;
 
-  const int radio = width / 4;
+  const int radio = height / 3;
   const int centerx = abs (width / 2);
   const int centery = abs (height / 2);
 
@@ -129,8 +129,8 @@ conv2d_monocore (sbmp_raw_data **base_img, sbmp_raw_data **new_img, int32_t heig
           pixelOverGreen = 0;
           pixelOverBlue = 0;
 
-          int x =  pos_ix;
-          int y =  pos_iy;
+          int y =  pos_ix;
+          int x =  pos_iy;
 
           if ((centerx - x) * (centerx - x) + (centery - y) * (centery - y) <= radio * radio)
             {
