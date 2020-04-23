@@ -15,7 +15,7 @@ int main ()
 {
   sbmp_image *img = calloc (1, sizeof (sbmp_image));
   //sbmp_initialize_bmp (img, M+1, (M+1)*2);
-  sbmp_initialize_bmp (img, "base.bmp");
+  sbmp_load_bmp ("base.bmp",img );
 
   int p, q, n, w;
   double x, y, xx, yy, Incx, Incy;
