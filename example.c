@@ -15,6 +15,9 @@ int main(){
   sbmp_save_bmp ("frac.bmp", &test_img);
 }
 
+/*
+ * \@details http://www.albertostrumia.it/sites/default/files/Fractals/FractalGallery2/EW2.html
+ */
 void fractal_generate (sbmp_raw_data **img_data, int32_t height, int32_t width)
 {
   const double Radius = 0.8;
