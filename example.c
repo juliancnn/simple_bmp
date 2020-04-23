@@ -5,18 +5,18 @@
 
 #include "simple_bmp.h"
 
-#define  SIZE_K 43
+#define  SIZE_K 42
 
 uint64_t rdtsc ();
 void focus_center (sbmp_raw_data **, int32_t, int32_t);
 void
 conv2d_monocore (sbmp_raw_data **base_img, sbmp_raw_data **new_img, int32_t height, int32_t width, uint16_t **kernel);
-void kernel_setup(uint16_t **kern, int16_t ksize);
+void kernel_setup (uint16_t **kern, int16_t ksize);
 int main ()
 {
-  uint16_t **kernel = calloc(SIZE_K, sizeof(int *));
-  for(int k = 0; k< SIZE_K; k++)
-    kernel[k] = calloc(SIZE_K,sizeof(uint16_t));
+  uint16_t **kernel = calloc (SIZE_K, sizeof (int *));
+  for (int k = 0; k < SIZE_K; k++)
+    kernel[k] = calloc (SIZE_K, sizeof (uint16_t));
   kernel_setup (kernel, SIZE_K);
 
   sbmp_image test_img, dup;
@@ -25,7 +25,7 @@ int main ()
   sbmp_load_bmp ("base.bmp", &dup);
   printf ("altura : %d\n", test_img.info.image_height);
   printf ("ancho : %d\n", test_img.info.image_width);
-  conv2d_monocore (test_img.data, dup.data, test_img.info.image_height, test_img.info.image_width, kernel);
+  conv2d_monocore (test_img.data, dup.data, test_img.info.image_width, test_img.info.image_width, kernel);
   sbmp_save_bmp ("frac.bmp", &dup);
 }
 
@@ -68,7 +68,6 @@ uint64_t rdtsc ()
   return ((uint64_t) hi << 32) | lo;
 }
 
-
 /**
  * Convolucion monocore
  *
@@ -97,14 +96,15 @@ conv2d_monocore (sbmp_raw_data **base_img, sbmp_raw_data **new_img, int32_t heig
 
   int8_t k_size = SIZE_K;
   float bais = 0;
-  for(int i=0;i<SIZE_K;i++){
-      for(int j=0;j<SIZE_K;j++){
+  for (int i = 0; i < SIZE_K; i++)
+    {
+      for (int j = 0; j < SIZE_K; j++)
+        {
           bais += (float) (kernel[i][j]);
         }
-  }
+    }
 
-
-  int8_t k_mid = k_size >> 1;
+  int32_t k_mid = k_size >> 1;
 
   /* Timmer */
   uint64_t t1, t2, t3;
@@ -123,38 +123,37 @@ conv2d_monocore (sbmp_raw_data **base_img, sbmp_raw_data **new_img, int32_t heig
   gettimeofday (&tiempo_1, NULL);
   gettimeofday (&tiempo_2, NULL);
 
-      /* Avanzo sobre las filas de la imagen, tipo not process  */
-      for (int pos_ix = (k_size >> 1); pos_ix < width - (k_size >> 1); pos_ix++)
+  /* Avanzo sobre las filas de la imagen, tipo not process  */
+  for (int pos_ix = (k_size >> 1); pos_ix  + 1< height - (k_size >> 1); pos_ix++)
+    {
+      /* Avanzo sobre las columnas de la imagen, tipo not process  */
+      for (int pos_iy = (k_size >> 1); pos_iy + 1 < width - (k_size >> 1); pos_iy++)
         {
-          /* Avanzo sobre las columnas de la imagen, tipo not process  */
-          for (int pos_iy = (k_size >> 1); pos_iy < height - (k_size >> 1); pos_iy++)
+          pixelOverRed = 0;
+          pixelOverGreen = 0;
+          pixelOverBlue = 0;
+          for (int pos_kx = 0; pos_kx < k_size; pos_kx++)
             {
-              pixelOverRed = 0;
-              pixelOverGreen = 0;
-              pixelOverBlue = 0;
-              for (int pos_kx = 0; pos_kx < k_size; pos_kx++)
+              for (int pos_ky = 0; pos_ky < k_size; pos_ky++)
                 {
-                  for (int pos_ky = 0; pos_ky < k_size; pos_ky++)
-                    {
-                      pixelOverRed += (uint16_t) ((base_img[pos_ix - k_mid + pos_kx][pos_iy - k_mid + pos_ky].red
-                                                   * kernel[pos_kx][pos_ky]));
-                      pixelOverBlue += (uint16_t) ((base_img[pos_ix - k_mid + pos_kx][pos_iy - k_mid + pos_ky].blue
-                                                    * kernel[pos_kx][pos_ky]));
-                      pixelOverGreen += (uint16_t) ((base_img[pos_ix - k_mid + pos_kx][pos_iy - k_mid + pos_ky].green
-                                                     * kernel[pos_kx][pos_ky]));
-                    }
-
+                  pixelOverRed += (uint16_t) ((base_img[pos_ix - k_mid + pos_kx][pos_iy - k_mid + pos_ky].red
+                                               * kernel[pos_kx][pos_ky]));
+                  pixelOverBlue += (uint16_t) ((base_img[pos_ix - k_mid + pos_kx][pos_iy - k_mid + pos_ky].blue
+                                                * kernel[pos_kx][pos_ky]));
+                  pixelOverGreen += (uint16_t) ((base_img[pos_ix - k_mid + pos_kx][pos_iy - k_mid + pos_ky].green
+                                                 * kernel[pos_kx][pos_ky]));
                 }
-              pixelOverRed = (uint32_t) ((float) (pixelOverRed) / bais);
-              pixelOverGreen = (uint32_t) ((float) (pixelOverGreen) / bais);
-              pixelOverBlue = (uint32_t) ((float) (pixelOverBlue) / bais);
-              new_img[pos_ix][pos_iy].red = (uint8_t) ((pixelOverRed) > 255) ? 255 : ((uint8_t) pixelOverRed);
-              new_img[pos_ix][pos_iy].blue = (uint8_t) ((pixelOverBlue) > 255) ? 255 : ((uint8_t) pixelOverBlue);
-              new_img[pos_ix][pos_iy].green = (uint8_t) ((pixelOverGreen) > 255) ? 255 : ((uint8_t) pixelOverGreen);
-            }
 
+            }
+          pixelOverRed = (uint32_t) ((float) (pixelOverRed) / bais);
+          pixelOverGreen = (uint32_t) ((float) (pixelOverGreen) / bais);
+          pixelOverBlue = (uint32_t) ((float) (pixelOverBlue) / bais);
+          new_img[pos_ix][pos_iy].red = (uint8_t) ((pixelOverRed) > 255) ? 255 : ((uint8_t) pixelOverRed);
+          new_img[pos_ix][pos_iy].blue = (uint8_t) ((pixelOverBlue) > 255) ? 255 : ((uint8_t) pixelOverBlue);
+          new_img[pos_ix][pos_iy].green = (uint8_t) ((pixelOverGreen) > 255) ? 255 : ((uint8_t) pixelOverGreen);
         }
 
+    }
 
   gettimeofday (&tiempo_3, NULL);
   t3 = rdtsc ();
@@ -168,7 +167,7 @@ conv2d_monocore (sbmp_raw_data **base_img, sbmp_raw_data **new_img, int32_t heig
   printf ("[Monocore  v1] %15lu ciclos     %10i ms\n", (t3 - t2) - (t2 - t1), time_ms);
 
 }
-void kernel_setup(uint16_t **kern, int16_t ksize)
+void kernel_setup (uint16_t **kern, int16_t ksize)
 {
   uint16_t st_val = 1;
   for (int i = 0; i < ksize; i++)
@@ -178,22 +177,22 @@ void kernel_setup(uint16_t **kern, int16_t ksize)
           kern[i][j] = st_val;
         }
     }
-  for (int i = 1; i < ksize / 2 +1; i++)
+  for (int i = 1; i < ksize / 2 + 1; i++)
     {
-      for (int j = 0; j < ksize ; j++)
+      for (int j = 0; j < ksize; j++)
         {
           if (j >= i && j < (ksize - i))
-            kern[i][j] = (uint16_t) (kern[i-1][j] + (uint16_t) 1);
+            kern[i][j] = (uint16_t) (kern[i - 1][j] + (uint16_t) 1);
           else
-            kern[i][j] = kern[i-1][j];
+            kern[i][j] = kern[i - 1][j];
         }
 
     }
-  for (int i = 1 ; i < ksize/2; i++)
+  for (int i = 1; i < ksize / 2; i++)
     {
-      for (int j = 0; j < ksize ; j++)
+      for (int j = 0; j < ksize; j++)
         {
-            kern[i + ksize/2][j] = kern[ksize/2 - i][j];
+          kern[i + ksize / 2][j] = kern[ksize / 2 - i][j];
         }
 
     }
