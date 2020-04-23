@@ -1,14 +1,20 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <inttypes.h>
+#include <libnet.h>
+
 #include "simple_bmp.h"
 
-void fractal_generate (sbmp_raw_data **, int32_t, int32_t);
+uint64_t rdtsc ();
 void focus_center (sbmp_raw_data **, int32_t, int32_t);
+float *conv2d_monocore (float *img, int i_size_x, int i_size_y);
+
 int main ()
 {
-  sbmp_image test_img;
-  sbmp_load_bmp ("base.bmp", &test_img);
+  sbmp_image test_img, dup;
+  sbmp_load_bmp ("guarani.bmp", &test_img);
+  sbmp_initialize_bmp (&dup, (uint32_t) test_img.info.image_height, (uint32_t) test_img.info.image_width);
+
   printf ("altura : %d\n", test_img.info.image_height);
   printf ("ancho : %d\n", test_img.info.image_width);
   focus_center (test_img.data, test_img.info.image_height, test_img.info.image_width);
@@ -21,7 +27,7 @@ int main ()
 
 void focus_center (sbmp_raw_data **img_data, int32_t height, int32_t width)
 {
-  const int radio = width / 4 ;
+  const int radio = width / 4;
   const int centerx = abs (width / 2);
   const int centery = abs (height / 2);
 
@@ -47,67 +53,93 @@ void focus_center (sbmp_raw_data **img_data, int32_t height, int32_t width)
 
 }
 
-void fractal_generate (sbmp_raw_data **img_data, int32_t height, int32_t width)
+uint64_t rdtsc ()
 {
-  const double Radius = 0.8;
-  const double Cx = 0.0;
-  const double Cy = 0.0;
-  const double Side = 0.15;
-  const uint16_t Num = 64;
+  unsigned int lo, hi;
+  __asm__ __volatile__ ("rdtsc" : "=a" (lo), "=d" (hi));
+  return ((uint64_t) hi << 32) | lo;
+}
 
-  int p, q, n, w;
-  double x, y, xx, yy, Incx, Incy;
 
-  for (p = 0; p < height; p++)
+/**
+ * Convolucion monocore
+ *
+ * EL tratamiento de bordes es Not Process
+ *
+ * @param [in] kernel Puntero al kernel
+ * @param [in] k_size Tamano de la matrix cuadrada del kernel
+ * @param [in] img  Puntero a la imagen a procesar
+ * @param [in] i_size_x  tamano en pixeles del ancho de la imagen
+ * @param [in] i_size_y  tamano en pixeles del alto de la imagen
+ * @return Resultado de la convolucion
+ *
+ * @note alloca memoria para el resultado igual que la imagen de entrada
+ */
+float *conv2d_monocore (float *img)
+{
+  uint16_t kernel[] = { 1, 1, 1, 1, 1, 1, 2, 2, 2, 1, 1, 2, 4, 2, 1, 1, 2, 2, 2, 1, 1, 1, 1, 1, 1 }; //5x5
+  uint16_t k_size = 5;
+  float baias = 36;
+
+  /* Timmer */
+  uint64_t t1, t2, t3;
+  struct timeval tiempo_1, tiempo_2, tiempo_3;
+  int32_t time_ms;
+
+
+  float *ptr_img_x = img + (k_size >> 1) * i_size_x;
+  float *ptr_img_o = data_out + (k_size >> 1) * i_size_x;
+  float *ptr_ker_x;
+  float *pixelOver;
+
+#ifdef DEBUG_MODE
+  printf ("Porcentaje : 00");
+#endif
+  t1 = rdtsc ();
+  t2 = rdtsc ();
+  gettimeofday (&tiempo_1, NULL);
+  gettimeofday (&tiempo_2, NULL);
+  /* Avanzo sobre las filas de la imagen, tipo not process  */
+  for (int pos_ix = (k_size >> 1); pos_ix < i_size_x - (k_size >> 1); pos_ix++)
     {
-      Incy = -Side + 2 * Side / height * p;
-
-      //printf("%i %%\n", p*100/M);
-
-      for (q = 0; q < width; q++)
+      /* Avanzo sobre las columnas de la imagen, tipo not process  */
+      for (int pos_iy = (k_size >> 1); pos_iy < i_size_y - (k_size >> 1); pos_iy++)
         {
-          //Incx = -Side + 2 * Side / (width *2) * q;
-          Incx = -Side + 2 * Side / width * q;
-
-          x = Incx;
-          y = Incy;
-          w = 0;
-
-          for (n = 1; n <= Num; ++n)
+          /* Calculo sobre el kernel */
+          ptr_ker_x = kernel;
+          for (int pos_kx = 0; pos_kx < k_size; pos_kx++)
             {
-              xx = 5 * x / 6.0
-                   - x * (x * x * x * x - 10 * x * x * y * y + 5 * y * y * y * y) / (x * x + y * y) / (x * x + y * y)
-                     / (x * x + y * y) / (x * x + y * y) / (x * x + y * y) / 6.0;
-
-              yy = 5 * y / 6.0
-                   + y * (5 * x * x * x * x - 10 * x * x * y * y + y * y * y * y) / (x * x + y * y) / (x * x + y * y)
-                     / (x * x + y * y) / (x * x + y * y) / (x * x + y * y) / 6.0;
-
-              x = xx;
-              y = yy;
-//              printf("%f - %f\n",x,y);
-
-              if ((x - Cx) * (x - Cx) + (y - Cy) * (y - Cy) < Radius)
+              for (int pos_ky = 0; pos_ky < k_size; pos_ky++)
                 {
-                  w = n;
+                  pixelOver = (ptr_img_x + (-(k_size >> 1) + pos_kx) * i_size_x) + (pos_iy - (k_size >> 1) + pos_ky);
 
-                  n = Num;
+                  /* *(ptr_img_o + pos_iy) += *pixelOver < 250 ? 0 :
+                                           (*pixelOver > 1000 ? 1000 : (*pixelOver
+                                                                        * *(kernel + pos_kx * k_size + pos_ky))); */
+                  *(ptr_img_o + pos_iy) += *pixelOver * *(kernel + pos_kx * k_size + pos_ky);
+
                 }
+
+              ptr_ker_x += k_size;
 
             }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wconversion"
-          img_data[p][q] = (sbmp_raw_data) {
-              //(uint8_t)((float) img->data[p][q].blue + (float) w/128),
-              ((w > 30) ? (uint8_t) (abs ((int32_t) ((float) img_data[p][q].blue * 1.2 - 46))) : (uint8_t) abs (
-                  (int32_t) img_data[p][q].blue + 10)),
-              ((w > 30) ? (uint8_t) (abs ((int32_t) ((float) img_data[p][q].green * 1.2 - 46))) : (uint8_t) abs (
-                  (int32_t) img_data[p][q].green + 10)),
-              ((w > 30) ? (uint8_t) (abs ((int32_t) ((float) img_data[p][q].red * 1.2 - 46))) : (uint8_t) abs (
-                  (int32_t) img_data[p][q].red + 10)),
-          };
-#pragma GCC diagnostic pop
         }
+      ptr_img_x += i_size_x;
+      ptr_img_o += i_size_x;
+
     }
+
+  gettimeofday (&tiempo_3, NULL);
+  t3 = rdtsc ();
+  time_ms = (int32_t) ((float) (tiempo_3.tv_usec - tiempo_2.tv_usec - (tiempo_2.tv_usec - tiempo_1.tv_usec))
+                       + ((float) (tiempo_3.tv_sec - tiempo_2.tv_sec - (tiempo_2.tv_sec - tiempo_1.tv_sec))
+                          * 1000000.0f)) / 1000;
+#ifdef DEBUG_MODE
+  printf ("\b\b%%100\n");
+  fflush (stdout);
+#endif
+  printf ("[Monocore  v1] %15lu ciclos     %10i ms\n", (t3 - t2) - (t2 - t1), time_ms);
+
+  return data_out;
 }
