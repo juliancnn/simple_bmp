@@ -3,12 +3,21 @@
 */
 
 #include "simple_bmp.h"
-
+/**
+ * Initialize a new image
+ *
+ * Initialize a new BMP image: 24 bits, without compression, without color pallet (2^BitsPerPixel colors are use)
+ * @param [out] image Clear (not null) sbmp_image to initialize
+ * @param [in] height in pixels (>0)
+ * @param [in] width in pixels (>0)
+ * @return The result of the Initialization, begin SBMP_OK if all worked OK \n
+ *          or  SBMP_ERROR_PARAM if the parameters are not valid
+ */
 enum sbmp_codes sbmp_initialize_bmp (sbmp_image *image, uint32_t height, uint32_t width)
 {
 
-  // Falta chequeo > 32bits, of
-  if (image == NULL || height == 0 || width == 0)
+  if ( image == NULL ||  height == 0 || width == 0
+      || height > INT32_MAX || width > INT32_MAX )
     {
       return SBMP_ERROR_PARAM;
     }
@@ -52,6 +61,12 @@ enum sbmp_codes sbmp_initialize_bmp (sbmp_image *image, uint32_t height, uint32_
   return SBMP_OK;
 }
 
+/**
+ * Save image in the filesystem
+ * @param [in] filename File path
+ * @param [in] image Image to save
+ * @return begin SBMP_OK if all worked OK or  SBMP_ERROR_FILE if you can't create the file
+ */
 enum sbmp_codes sbmp_save_bmp (const char *filename, const sbmp_image *image)
 {
 
@@ -66,17 +81,38 @@ enum sbmp_codes sbmp_save_bmp (const char *filename, const sbmp_image *image)
   fwrite (&image->type, sizeof (image->type), 1, fd);
   fwrite (&image->info, sizeof (image->info), 1, fd);
 
+  // Padding is necessary
+  size_t padd_size = ((size_t) image->info.image_width * sizeof (sbmp_raw_data)) % PADDINGSIZE;
+  uint8_t *zero_pad = NULL;
+
+  if (0 != padd_size)
+    { // Yes
+      padd_size = PADDINGSIZE - padd_size;
+      zero_pad = (uint8_t *) calloc (PADDINGSIZE, sizeof (uint8_t));
+    }
+
   for (int32_t i = image->info.image_height - 1; i >= 0; i--)
     {
       fwrite (image->data[i],
               sizeof (sbmp_raw_data),
-              (uint32_t) (image->info.image_width + image->info.image_width % 4),
+              (uint32_t) image->info.image_width,
               fd);
+      if (NULL != zero_pad)
+        fwrite (zero_pad, sizeof (uint8_t), padd_size, fd);
     }
+
+  if (NULL != zero_pad)
+    free (zero_pad);
 
   return SBMP_OK;
 }
 
+/**
+ * Load image from the disk in sbmp_image
+ * @param [in] filename File path to be load
+ * @param [out] image  Not null pointer where image to be load
+ * @return begin SBMP_OK if all worked OK or  SBMP_ERROR_FILE if you can't read the file
+ */
 enum sbmp_codes sbmp_load_bmp (const char *filename, sbmp_image *image)
 {
 
@@ -93,6 +129,7 @@ enum sbmp_codes sbmp_load_bmp (const char *filename, sbmp_image *image)
   if (image->data == NULL)
     {
       fprintf (stderr, "Error: %s\n", strerror (errno));
+      fclose (fd);
       return SBMP_ERROR_FILE;
     }
 
@@ -106,5 +143,3 @@ enum sbmp_codes sbmp_load_bmp (const char *filename, sbmp_image *image)
   fclose (fd);
   return SBMP_OK;
 }
-
-
