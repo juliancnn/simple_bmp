@@ -143,3 +143,25 @@ enum sbmp_codes sbmp_load_bmp (const char *filename, sbmp_image *image)
   fclose (fd);
   return SBMP_OK;
 }
+
+/**
+ * Release the pixel memory and clean scruct of the image
+ * @param [in] image
+ * @return
+ */
+enum sbmp_codes sbmp_free (sbmp_image *image)
+{
+
+  if (NULL == image)
+    return SBMP_ERROR_PARAM;
+
+  for (int32_t i = 0; i < image->info.image_height; i++)
+    {
+      free (image->data[i]);
+    }
+  free (image->data);
+  image->info = (sbmp_iinfo_data) {0};
+  image->type = (sbmp_ftype_data) {0};
+
+  return SBMP_OK;
+}

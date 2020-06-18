@@ -12,5 +12,3 @@ Based on the article: [Bits to Bitmaps: A simple walkthrough of BMP Image Format
 - Create image BMP of 24 bits, without compression and without color pallete
 - Save image in disk
 
-## TO-DO
-- Implement a function to release the memory image (Really easy to do)

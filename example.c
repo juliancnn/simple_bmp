@@ -36,6 +36,7 @@ int main ()
     }
 
   sbmp_save_bmp ("testeo.bmp", &imgtest);
+  sbmp_free (&imgtest);
 
 
 }

@@ -78,6 +78,7 @@ typedef struct _sbmp_raw_data {
   uint8_t red;
 } __attribute__ ((__packed__)) sbmp_raw_data;
 
+/// Main structure of the image
 typedef struct _sbmp_image {
   sbmp_ftype_data type;
   sbmp_iinfo_data info;
@@ -90,5 +91,6 @@ typedef struct _sbmp_image {
 enum sbmp_codes sbmp_initialize_bmp (sbmp_image *image, uint32_t height, uint32_t width);
 enum sbmp_codes sbmp_save_bmp (const char *filename, const sbmp_image *image);
 enum sbmp_codes sbmp_load_bmp (const char *filename, sbmp_image *image);
+enum sbmp_codes sbmp_free (sbmp_image *image);
 
 #endif //_SIMPLE_BMP_H_
